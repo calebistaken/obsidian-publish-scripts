@@ -1,0 +1,31 @@
+/* ==============================================================
+   IMAGE/VIDEO CAPTIONS
+   ============================================================== */
+
+/* Add alt-text of images and videos as caption
+   (assumes the .image-embed / .video-embed element itself has an alt attr) */
+.image-embed[alt]:not([alt$=".png" i],[alt$=".webp" i],
+                       [alt$=".jpg" i],[alt$=".jpeg" i],
+                       [alt$=".tif" i],[alt$=".tiff" i],
+                       [alt$=".mp4" i],[alt$=".heic" i],
+                       [alt$=".mov" i],[alt$=".heif" i])::after,
+.video-embed[alt]:not([alt$=".png" i],[alt$=".webp" i],
+                      [alt$=".jpg" i],[alt$=".jpeg" i],
+                      [alt$=".tif" i],[alt$=".tiff" i],
+                      [alt$=".mp4" i],[alt$=".heic" i],
+                      [alt$=".mov" i],[alt$=".heif" i])::after {
+  content: attr(alt);
+  color: var(--text-muted);
+  text-align: center;
+  display: block;
+  font-family: var(--font-caption-theme), var(--font-monospace-caption), sans-serif;
+}
+
+/* Center images & videos */
+.view-content img:not(.emoji),
+.view-content video:not(.emoji) {
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+  border: 0; /* drop the nested & * rule */
+}

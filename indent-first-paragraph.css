@@ -1,0 +1,22 @@
+
+/* ==============================================================
+   TYPOGRAPHY: READING & PREVIEW MODE
+   ============================================================== */
+.markdown-preview-view,
+.markdown-reading-view {
+  /* Indent and hyphenate clean prose paragraphs */
+  p:not(:has(img, fig, ol, ul, .tag, code, pre)):not(.callout, .callout-content *, [class*="callout"], .footnote, .frontmatter) {
+    text-indent: 0.5in;
+    hanging-punctuation: first allow-end;
+    /*hyphens: auto;*/
+  }
+
+  /* === Reset indentation for structural elements === */
+  h1, h2, h3, h4, h5, h6, ul, ol, li, hr, pre, code, 
+  ht, td, figcaption, figure, img, blockquote, table,
+  .callout, .footnote, .frontmatter {
+    text-indent: 0 !important;
+    hyphens: none !important;
+    hanging-punctuation: unset !important;
+  }
+}
