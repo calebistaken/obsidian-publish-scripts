@@ -1,134 +1,94 @@
-// --- Obsidian Publish: replace sidebar link text with page title ----------------
-(function () {
-  const DEBUG = false;
-  const CACHE_PREFIX = "h1TitleCache::";
-  const NAV_SELECTOR = ".site-body-left-column .nav-view";        // from your DOM
-  const LINK_SELECTOR = ".tree-item-inner a[href]";
-  const TITLE_META_SELECTORS = [
-    'meta[property="og:title"]',
-    'meta[name="twitter:title"]'
-  ];
+/**
+ * Clean display text by removing leading YYYYMMDDx + space, e.g. "20240814a "
+ * - Affects: link labels + visible titles + document.title (tab)
+ * - Does NOT change href/URLs
+ * - Works on SPA route changes
+ */
+(() => {
+  // \b[0-9]{8}[a-z]\s+  (case-insensitive)
+  const RE = /\b\d{8}[a-z]\s+/i;
 
-  // --- small fetch queue so we don't spam requests
-  const queue = [];
-  let working = false;
-  async function runQueue() {
-    if (working) return;
-    working = true;
-    while (queue.length) {
-      const job = queue.shift();
-      try { await job(); } catch (e) { DEBUG && console.warn(e); }
-      await new Promise(r => setTimeout(r, 80));
-    }
-    working = false;
-  }
+  // Replace once at the start of a string, then trim leftover whitespace
+  const stripStamp = (s) => (s ? s.replace(RE, '').trim() : s);
 
-  function log(...a){ if (DEBUG) console.log("[publish h1]", ...a); }
-
-  function isInternal(href) {
-    try { return new URL(href, location.origin).origin === location.origin; }
-    catch { return false; }
-  }
-
-  function normalizePath(href) {
-    const u = new URL(href, location.origin);
-    // strip hash & query; normalize trailing slash
-    return (u.pathname || "/").replace(/\/+$/, "") || "/";
-  }
-
-  function cacheGet(k){ try { return localStorage.getItem(CACHE_PREFIX + k); } catch { return null; } }
-  function cacheSet(k,v){ try { localStorage.setItem(CACHE_PREFIX + k, v); } catch {} }
-
-  function cleanTitle(raw) {
-    let t = (raw || "").replace(/\s+/g, " ").trim();
-    // Remove " - <Site Name>" suffix if present
-    const siteName = document.querySelector(".site-body-left-column-site-name")?.textContent?.trim();
-    if (siteName && t.endsWith(" - " + siteName)) t = t.slice(0, -(" - " + siteName).length);
-    return t;
-  }
-
-  function extractTitleFromHTML(html) {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-
-    // 1) Prefer head meta tags (these exist even when body is client-rendered)
-    for (const sel of TITLE_META_SELECTORS) {
-      const m = doc.querySelector(sel);
-      if (m?.content) return cleanTitle(m.content);
-    }
-    // 2) Fallback: <title>
-    const tt = doc.querySelector("title")?.textContent;
-    if (tt) return cleanTitle(tt);
-
-    // 3) Last resort: an H1 in the parsed HTML (if SSR present)
-    const h1 = doc.querySelector("h1.publish-article-heading") ||
-               doc.querySelector("main h1") ||
-               doc.querySelector("h1");
-    if (h1) return cleanTitle(h1.textContent);
-
-    return null;
-  }
-
-  async function fetchPageTitle(pathname) {
-    const cached = cacheGet(pathname);
-    if (cached) return cached;
-
-    const res = await fetch(pathname, { credentials: "same-origin" });
-    if (!res.ok) throw new Error(`Fetch ${pathname} -> ${res.status}`);
-    const html = await res.text();
-    const title = extractTitleFromHTML(html);
-    if (title) cacheSet(pathname, title);
-    return title;
-  }
-
-  function processLink(a) {
-    if (a.dataset.h1Rewritten === "1") return;
-    const href = a.getAttribute("href");
-    if (!href || !isInternal(href)) return;
-
-    const path = normalizePath(href);
-    // Skip folder nodes (no page)
-    if (!path || path === "/") return;
-
-    queue.push(async () => {
-      const t = await fetchPageTitle(path);
-      if (t && t.length) {
-        if (!a.dataset.originalText) a.dataset.originalText = a.textContent || "";
-        a.textContent = t;
-        a.title = t;
-        a.dataset.h1Rewritten = "1";
-        log("rewrote", path, "→", t);
+  // Walk text nodes under an element and clean those that match
+  const cleanTextNodes = (root) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        return RE.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
       }
     });
-    runQueue();
-  }
+    const toEdit = [];
+    let n;
+    while ((n = walker.nextNode())) toEdit.push(n);
+    for (const node of toEdit) node.nodeValue = stripStamp(node.nodeValue);
+  };
 
-  function scanSidebar(root = document) {
-    document.querySelectorAll(NAV_SELECTOR).forEach(nav => {
-      nav.querySelectorAll(LINK_SELECTOR).forEach(processLink);
+  // Clean link labels (without touching href)
+  const cleanLinks = (scope = document) => {
+    const anchors = scope.querySelectorAll('a');
+    anchors.forEach((a) => {
+      // If the link has only a text node, easy path:
+      if (a.childNodes.length === 1 && a.firstChild.nodeType === Node.TEXT_NODE) {
+        const original = a.textContent;
+        if (RE.test(original)) a.textContent = stripStamp(original);
+      } else {
+        // For nested spans/icons, clean all text nodes within
+        cleanTextNodes(a);
+      }
     });
-  }
+  };
 
-  // initial pass
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", scanSidebar, { once: true });
-  } else {
-    scanSidebar();
-  }
+  // Clean visible note titles + tab title
+  const cleanTitles = (scope = document) => {
+    // Try a few common Publish selectors for the visible H1/title
+    const titleEls = scope.querySelectorAll(
+      'h1, .view-header-title, header h1, .markdown-reading-view h1, .markdown-rendered h1'
+    );
+    titleEls.forEach((el) => {
+      // Text-only title
+      if (el.childNodes.length === 1 && el.firstChild.nodeType === Node.TEXT_NODE) {
+        const t = el.textContent;
+        if (RE.test(t)) el.textContent = stripStamp(t);
+      } else {
+        // In case the title is split across spans
+        cleanTextNodes(el);
+      }
+    });
 
-  // observe nav changes (folder toggles, route changes, lazy rendering)
-  const obs = new MutationObserver(muts => {
-    for (const m of muts) {
-      if (m.type === "childList") {
-        m.addedNodes.forEach(n => {
-          if (n.nodeType !== 1) return;
-          if (n.matches?.(NAV_SELECTOR)) scanSidebar(n);
-          n.querySelectorAll?.(LINK_SELECTOR).forEach(processLink);
-        });
+    // Browser tab title
+    if (document.title && RE.test(document.title)) {
+      document.title = stripStamp(document.title);
+    }
+  };
+
+  const run = (root = document) => {
+    cleanLinks(root);
+    cleanTitles(root);
+  };
+
+  // Initial pass
+  run();
+
+  // Observe SPA route/content changes and re-run
+  const observer = new MutationObserver((mutations) => {
+    // If nodes added to the DOM, re-run in a cheap way
+    for (const m of mutations) {
+      if (m.addedNodes && m.addedNodes.length) {
+        // Run once per batch using the document scope for simplicity/robustness
+        run();
+        break;
       }
     }
   });
-  obs.observe(document.body, { childList: true, subtree: true });
 
-  // If the SPA router swaps content without DOM mutations in nav, re-run on popstate
-  window.addEventListener("popstate", () => scanSidebar());
+  // Observe the whole document body (Publish updates content inside it)
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // Also catch hash/History changes (belt-and-suspenders)
+  window.addEventListener('hashchange', () => run());
+  window.addEventListener('popstate', () => run());
 })();
