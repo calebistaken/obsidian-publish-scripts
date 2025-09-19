@@ -1,0 +1,28 @@
+/* ==============================================================
+   SPECIAL CALLOUT TWEAKS: Dream, Quote/Cite
+   ============================================================== */
+/* === Add a [!dream] callout === */
+div.callout[data-callout*="dream"] {
+  --callout-color: 128, 0, 128;
+  --callout-icon: bed-double;
+  font-variant-ligatures: common-ligatures discretionary-ligatures;
+  font-feature-settings: "liga", "dlig";
+
+  & p {
+    font-style: italic;
+    font-size: var(--font-text-size) !important;
+  }
+
+}
+
+/* === Italics & ligatures for [!quote] & [!cite] callouts === */
+.callout[data-callout*="quote"],
+.callout[data-callout*="cite"]  {
+  font-variant-ligatures: common-ligatures discretionary-ligatures;
+  font-feature-settings: "liga", "dlig";
+
+  & p {
+    font-style: italic;
+    font-size: var(--font-text-size) !important;
+  }
+}

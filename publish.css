@@ -1,0 +1,48 @@
+/* ==============================================================
+   IMPORT: Themes & CSS snippets
+   ============================================================== */
+@import url("https://cdn.jsdelivr.net/gh/hungsu/typomagical-obsidian/theme.css");
+/*@import url("https://cdn.jsdelivr.net/gh/chrisgrieser/shimmering-focus/theme.css";*/
+/*@import url("https://cdn.jsdelivr.net/gh/LeslyeCream/Lagom-Obsidian-Theme/theme.css";*/
+
+
+/* ==============================================================
+   CUSTOM SYNTAX: Local import/script replacements
+   ============================================================== */
+@import "./css/shimmering-focus.css";
+@import "./css/typography.css";
+@import "./css/image-gallery.css";
+@import "./css/dream-callouts.css";
+@import "./css/chat-bubbles.css";
+
+
+/* ==============================================================
+   GUI OVERRIDES: ACCENT COLORS & FONTS
+   ============================================================== */
+.frontmatter { /* show frontmatter */
+	/* display: block !important; */
+}
+
+/* Accent color */
+:root, html, body {
+  --accent:         #435a84 !important;
+  --accent-h:       219     !important;
+  --accent-s:       33%     !important;
+  --accent-l:       39%     !important;
+}
+
+/* Font customization */
+:root, html, body {
+  --font-interface-theme: 'Alegreya Sans', sans-serif !important;
+  --font-caption-theme:   'Alegreya SC',   sans-serif !important;
+  /*--font-text-theme:      'Times New Roman';*/
+}
+
+/*
+  --font-text-theme:       Palatino        !important;
+  --font-interface-theme:  Helvetica Nuevo !important;
+  --font-monospace-theme:  Courier new     !important;
+  --font-text-size:        12pt            !important;
+*/
+
+

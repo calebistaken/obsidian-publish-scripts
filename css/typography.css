@@ -1,0 +1,36 @@
+
+/* ==============================================================
+   TYPOGRAPHY: READING & PREVIEW MODE
+   ============================================================== */
+.markdown-preview-view,
+.markdown-reading-view {
+  /* Indent and hyphenate clean prose paragraphs */
+  p:not(:has(img, fig, ol, ul, .tag, code, pre)):not(.callout, .callout-content *, [class*="callout"], .footnote, .frontmatter) {
+    text-indent: 0.5in;
+    hanging-punctuation: first allow-end;
+    /*hyphens: auto;*/
+  }
+
+  /* === Reset indentation for structural elements === */
+  h1, h2, h3, h4, h5, h6, ul, ol, li, hr, pre, code, 
+  ht, td, figcaption, figure, img, blockquote, table,
+  .callout, .footnote, .frontmatter {
+    text-indent: 0 !important;
+    hyphens: none !important;
+    hanging-punctuation: unset !important;
+  }
+}
+
+/* Unwrap Tags */
+a.tag ~ br:has(~ a.tag) { display: none; }
+
+/* fix h1.page-header elements to match standard h1 elements */
+.page-header {
+  all: unset;              /* remove its layout/box styles */
+}
+.page-header h1 {
+  all: unset;              /* clear any page-header-specific overrides */
+  font: var(--h1-font, var(--font-serif) 700 2.5rem/1.2);
+  margin: var(--h1-margin, 0 0 .75rem 0);
+  color: var(--h1-color, var(--text-normal));
+}

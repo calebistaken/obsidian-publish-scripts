@@ -1,0 +1,66 @@
+@import url("https://cdn.jsdelivr.net/gh/efemkay/obsidian-modular-css-layout/MCL%20Gallery%20Cards.css");
+@import url("https://cdn.jsdelivr.net/gh/efemkay/obsidian-modular-css-layout/MCL%20Multi%20Column.css");
+@import url("https://cdn.jsdelivr.net/gh/efemkay/obsidian-modular-css-layout/MCL%20Wide%20Views.css");
+
+body {
+  --img-border-radius:       5px;
+  --callout-gallery-gap:     5px;
+  --img-max-height:          500px;
+}
+
+/* === Default gallery layout (flex) === */
+.markdown-rendered div:has(> p img, > p video) > p {
+  display: flex;
+  gap: var(--callout-gallery-gap);
+  margin-left: var(--callout-gallery-gap);
+  margin-bottom: var(--callout-gallery-gap);
+  width: 100%;
+
+  & img, & video {
+    max-height: var(--img-max-height);
+    border: 3px solid var(--background-modifier-border);
+    border-radius: var(--img-border-radius);
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* === Sub-galleries below H2 headings === */
+.markdown-rendered div:has(> h2) ~ div:has(> p img, > p video) > p {
+  margin-bottom: 1rem;
+  & img, & video {
+    max-height: calc(var(--img-max-height) * 0.66);
+  }
+}
+
+/* === Container support for responsive layouts === */
+.markdown-preview-view {
+  container-type: inline-size;
+}
+
+/* === Desktop layout (≥ 801px): float sub-galleries === */
+/*
+@container (min-width: 801px) {
+  .markdown-rendered div:has(> h2) ~ div:has(> p img, > p video) > p {
+    max-width: max(550px, 50%);
+    float: right;
+    margin-left: 1rem;
+    clear: none;
+  }
+}
+*/
+
+/* === Tablet layout (451px–800px): default flex behavior === */
+@container (min-width: 451px) and (max-width: 800px) {
+  .markdown-rendered div:has(> h2) ~ div:has(> p img, > p video) > p {
+    /* Default flex gallery remains */
+  }
+}
+
+/* === Mobile layout (≤ 450px): cancel flex layout === */
+@container (max-width: 450px) {
+  .markdown-rendered div:has(> p img, > p video) > p {
+    display: block;
+    margin: 1rem auto;
+  }
+}
