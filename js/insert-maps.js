@@ -113,6 +113,7 @@
   const toLatLon = (a, b) => {
     let lat = a, lon = b;
     const inLat = (x) => x != null && Math.abs(x) <= 90;
+    theLon:
     const inLon = (x) => x != null && Math.abs(x) <= 180;
     if (!inLat(lat) || !inLon(lon)) if (inLat(b) && inLon(a)) { lat=b; lon=a; }
     return (inLat(lat) && inLon(lon)) ? { lat, lon } : null;
@@ -213,82 +214,119 @@
     const el=document.createElement('style'); el.id=STYLE_ID; el.textContent=css; document.head.appendChild(el);
   };
 
-  // ---------- mount/unmount ----------
-  const buildBlock=(lat,lon,locationText)=>{
-    const block=document.createElement('div'); block.id=BLOCK_ID;
-    const wrap=document.createElement('div'); wrap.id=WRAP_ID;
-    const ifr=document.createElement('iframe'); ifr.id=IFRAME_ID;
-    ifr.src=osmEmbedUrl(lat,lon,MAP_ZOOM);
-    ifr.referrerPolicy='no-referrer-when-downgrade';
-    ifr.loading='lazy';
+  // ---------- mount/update/unmount ----------
+  let LAST = { lat: null, lon: null, text: null };
+
+  const buildBlock = (lat, lon, locationText) => {
+    const block = document.createElement('div'); block.id = BLOCK_ID;
+    const wrap = document.createElement('div'); wrap.id = WRAP_ID;
+    const ifr = document.createElement('iframe'); ifr.id = IFRAME_ID;
+    ifr.src = osmEmbedUrl(lat, lon, MAP_ZOOM);
+    ifr.referrerPolicy = 'no-referrer-when-downgrade';
+    ifr.loading = 'lazy';
     wrap.appendChild(ifr); block.appendChild(wrap);
 
-    const meta=document.createElement('div'); meta.id=META_ID;
+    const meta = document.createElement('div'); meta.id = META_ID;
     meta.innerHTML = locationText ? `<div class="place">${locationText}</div>` : '';
     block.appendChild(meta);
     return block;
   };
 
-  const mountSideMap=(lat,lon,locationText)=>{
-    const right=getRightInner(); if(!right) return;
-    if(document.getElementById(BLOCK_ID)) return; // already mounted
+  const updateSideMap = (lat, lon, locationText) => {
+    const ifr = document.getElementById(IFRAME_ID);
+    const meta = document.getElementById(META_ID);
+    if (ifr) ifr.src = osmEmbedUrl(lat, lon, MAP_ZOOM);
+    if (meta) meta.innerHTML = locationText ? `<div class="place">${locationText}</div>` : '';
+  };
 
-    const block=buildBlock(lat,lon,locationText);
-    const graph=getGraphOuter();
-    if(graph && graph.parentNode===right) right.insertBefore(block,graph);
+  const mountOrUpdateSideMap = (lat, lon, locationText) => {
+    const right = getRightInner();
+    if (!right) return;
+
+    const exists = document.getElementById(BLOCK_ID);
+    if (exists) {
+      updateSideMap(lat, lon, locationText);
+      return;
+    }
+
+    const block = buildBlock(lat, lon, locationText);
+    const graph = getGraphOuter();
+    if (graph && graph.parentNode === right) right.insertBefore(block, graph);
     else right.appendChild(block);
   };
 
-  const unmountSideMap=()=>{
-    const block=document.getElementById(BLOCK_ID);
-    if(block && block.parentNode) block.parentNode.removeChild(block);
+  const unmountSideMap = () => {
+    const block = document.getElementById(BLOCK_ID);
+    if (block && block.parentNode) block.parentNode.removeChild(block);
   };
 
-  const shouldShowMap=()=> window.innerWidth >= MIN_VW;
+  const shouldShowMap = () => window.innerWidth >= MIN_VW;
 
   // ---------- boot/install ----------
-  let installing=false;
-  const installIfReady=()=>{
-    if(installing) return; installing=true;
+  let installing = false;
 
+  const installIfReady = () => {
+    if (installing) return; installing = true;
     ensureStyle();
 
     // coords priority: lat/lng → location → map_view_link → map_link
-    const coords=readCoordsFromFM();
+    const coords = readCoordsFromFM();
+    const show = !!coords && shouldShowMap();
 
-    if(!coords || !shouldShowMap()){
-      unmountSideMap(); installing=false; return;
+    if (!show) {
+      LAST = { lat: null, lon: null, text: null };
+      unmountSideMap(); installing = false; return;
     }
 
-    const addrStr=readAddressStr();
-    const locTxt =formatLocationFromAddress(addrStr);
+    const addrStr = readAddressStr();
+    const locTxt  = formatLocationFromAddress(addrStr);
 
-    mountSideMap(coords.lat,coords.lon,locTxt);
-    installing=false;
+    // only update if something changed
+    const same = LAST.lat === coords.lat && LAST.lon === coords.lon && LAST.text === locTxt;
+    if (!same) {
+      mountOrUpdateSideMap(coords.lat, coords.lon, locTxt);
+      LAST = { lat: coords.lat, lon: coords.lon, text: locTxt };
+    }
+
+    installing = false;
   };
 
-  const debounced=(fn,ms=120)=>{let t; return()=>{clearTimeout(t); t=setTimeout(fn,ms);};};
+  const debounced = (fn, ms=120) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; };
 
-  const haveFM=()=> qFM(document).length>0;
-  const waitFM=(cb)=>{
-    if(haveFM()){cb();return;}
-    const mo=new MutationObserver(()=>{if(haveFM()){mo.disconnect();cb();}});
-    mo.observe(document.documentElement,{childList:true,subtree:true});
-    setTimeout(()=>{if(haveFM()){mo.disconnect();cb();}},2000);
+  const haveFM = () => qFM(document).length > 0;
+  const waitFM = (cb) => {
+    if (haveFM()) { cb(); return; }
+    const mo = new MutationObserver(() => { if (haveFM()) { mo.disconnect(); cb(); }});
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+    setTimeout(() => { if (haveFM()) { mo.disconnect(); cb(); }}, 2000);
   };
 
-  const boot=()=>{
+  const boot = () => {
     waitFM(installIfReady);
-    let lastPath=location.pathname;
-    setInterval(()=>{ if(location.pathname!==lastPath){ lastPath=location.pathname; waitFM(installIfReady);} },150);
-    const mo=new MutationObserver(debounced(installIfReady,120));
-    mo.observe(getContentContainer()||document.body,{childList:true,subtree:true});
-    window.addEventListener('resize',debounced(installIfReady,120),{passive:true});
+
+    // Detect SPA-style route changes
+    let lastPath = location.pathname + location.search + location.hash;
+    setInterval(() => {
+      const now = location.pathname + location.search + location.hash;
+      if (now !== lastPath) { lastPath = now; waitFM(installIfReady); }
+    }, 150);
+
+    // Watch content swaps
+    const target = getContentContainer() || document.body;
+    const mo = new MutationObserver(debounced(installIfReady, 120));
+    mo.observe(target, { childList: true, subtree: true });
+
+    // Resize responsiveness
+    window.addEventListener('resize', debounced(installIfReady, 120), { passive: true });
+
+    // Bonus: listen for common SPA events if present
+    ['as:routechange','popstate','hashchange','pageshow','visibilitychange','turbo:load','pjax:end']
+      .forEach(ev => window.addEventListener(ev, debounced(installIfReady, 50)));
   };
 
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',boot,{once:true});
-  }else{
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
     boot();
   }
 })();

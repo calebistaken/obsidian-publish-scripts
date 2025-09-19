@@ -6,7 +6,7 @@ const REPO_BASE = 'https://cdn.jsdelivr.net/gh/calebistaken/obsidian-publish-scr
 const VERSION = '@latest'; // e.g. '@c91addc2' or '@latest'
 
 // Cache-busting (optional, e.g. only when inline_debug)
-const DEBUG_CACHE_BUST = false; // set true while debugging
+const DEBUG_CACHE_BUST = true; // set true while debugging
 const QS = DEBUG_CACHE_BUST ? `?v=${Date.now()}` : '';
 
 /* ===========================
