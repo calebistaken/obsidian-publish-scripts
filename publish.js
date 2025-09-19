@@ -43,6 +43,7 @@ loadScript('/js/next-previous-story.js');
 loadScript('/js/h1-page-header.js');
 loadScript('/js/insert-maps.js');
 loadScript('/js/insert-dates.js');
+loadScript('/js/ios-debug.js');
 
 // Disqus shortname must be set before its loader runs
 window.DISQUS_SHORTNAME = 'adventure-stories';
