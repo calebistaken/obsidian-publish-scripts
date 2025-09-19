@@ -19,7 +19,7 @@
   const META_ID   = 'side-map-meta';
 
   const MAP_ZOOM   = Number.isFinite(window.MAP_ZOOM) ? window.MAP_ZOOM : 12;
-  const MAP_HEIGHT = 200px; //Number.isFinite(window.SIDE_MAP_HEIGHT) ? window.SIDE_MAP_HEIGHT : 400;
+  const MAP_HEIGHT = Number.isFinite(window.SIDE_MAP_HEIGHT) ? window.SIDE_MAP_HEIGHT : 400;
   const MIN_VW     = Number.isFinite(window.SIDE_MAP_MIN_VW) ? window.SIDE_MAP_MIN_VW : 0;
 
   // ---------- DOM helpers ----------

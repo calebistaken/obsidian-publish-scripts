@@ -1,48 +1,49 @@
-/* ==============================================================
-   NO LONGER USED: Setup for pulling scripts from a guthub repository
-   ============================================================== */
-const repo = 'https://cdn.jsdelivr.net/gh/calebistaken/obsidian-publish-scripts';
-let commit = ''; //'c91addc261a733b497333a65a1241cdf119d6464'; // at least the first 7 digits of the hash
-let v      = ''; // Math.floor(Math.random() * 1000); // cache-bust with random version #
+/* ===========================
+   CDN base + versioning
+   =========================== */
+const REPO_BASE = 'https://cdn.jsdelivr.net/gh/calebistaken/obsidian-publish-scripts';
+// Use a pinned commit for stability, or '@latest' while developing
+const VERSION = '@latest'; // e.g. '@c91addc2' or '@latest'
 
-commit = '' && '@'   + commit;
-v =      '' && '?v=' + v);
+// Cache-busting (optional, e.g. only when inline_debug)
+const DEBUG_CACHE_BUST = false; // set true while debugging
+const QS = DEBUG_CACHE_BUST ? `?v=${Date.now()}` : '';
 
+/* ===========================
+   Classic <script> injector
+   (works with non-module code)
+   =========================== */
+function loadScript(path, { id, module = false, defer = true, async = false, replace = true } = {}) {
+  const url = `${REPO_BASE}${VERSION}${path}${QS}`;
 
-/* ==============================================================
-   CUSTOM SYNTAX: Local import/script replacements
-   ============================================================== */
+  if (replace) {
+    if (id) document.querySelectorAll(`script#${CSS.escape(id)}`).forEach(n => n.remove());
+    document.querySelectorAll(`script[src="${url}"]`).forEach(n => n.remove());
+  }
 
-// add classes to the body for minimal compatability with stylesettings
-import(repo + commit + "/js/style-settings.js" + v);
+  const s = document.createElement('script');
+  if (id) s.id = id;
+  s.src = url;
+  s.defer = defer;
+  s.async = async;
+  if (module) s.type = 'module';
+  document.head.appendChild(s);
+  return s;
+}
 
-// wrap images with alt-text in figures with figcaps 
-import(repo + commit + "/js/photo-captions.js" + v);
+/* ===========================
+   Load your scripts (classic)
+   =========================== */
+loadScript('/js/style-settings.js');
+loadScript('/js/photo-captions.js');
+loadScript('/js/auto-light-dark-switching.js');
+loadScript('/js/sanitize-filenames.js');
+loadScript('/js/image-lightbox.js');
+loadScript('/js/next-previous-story.js');
+loadScript('/js/h1-page-header.js');
+loadScript('/js/insert-maps.js');
+loadScript('/js/insert-dates.js');
 
-// Auto switch light/dark theme with the browser
-import(repo + commit + "/js/auto-light-dark-switching.js" + v);
-
-// Sanitize display text of links and titles by removing the leading YYYYMMDDx date string.
-import(repo + commit + "/js/sanitize-filenames.js" + v);
-
-// Fullscreen Lightbox image gallary for pictures on click
-import(repo + commit + "/js/image-lightbox.js" + v);
-
-// Add `[Prev] | [Next]` buttons to each note
-import(repo + commit + "/js/next-previous-story.js" + v);
-
-// Make h1.page-header look like normal h1
-import(repo + commit + "/js/h1-page-header.js" + v);
-
-// Add a location map to the right sidebar
-import(repo + commit + "/js/insert-maps.js" + v);
-
-// Add a dates abov the H1
-import(repo + commit + "/js/insert-dates.js" + v);
-
-// Add Disqus comments to the bottom of the story
+// Disqus shortname must be set before its loader runs
 window.DISQUS_SHORTNAME = 'adventure-stories';
-import(repo + commit + "/js/disqus.js" + v);
-
-
-
+loadScript('/js/disqus.js');
