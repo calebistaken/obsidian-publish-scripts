@@ -9,11 +9,11 @@
 /* ==============================================================
    CUSTOM SYNTAX: Local import/script replacements
    ============================================================== */
-@import "./css/shimmering-focus.css";
-@import "./css/typography.css";
-@import "./css/image-gallery.css";
-@import "./css/dream-callouts.css";
-@import "./css/chat-bubbles.css";
+@import url("https://cdn.jsdelivr.net/gh/calebistaken/css/shimmering-focus.css");
+@import url("https://cdn.jsdelivr.net/gh/calebistaken/typography.css");
+@import url("https://cdn.jsdelivr.net/gh/calebistaken/css/image-gallery.css");
+@import url("https://cdn.jsdelivr.net/gh/calebistaken/css/dream-callouts.css");
+@import url("https://cdn.jsdelivr.net/gh/calebistaken/css/chat-bubbles.css");
 
 
 /* ==============================================================
